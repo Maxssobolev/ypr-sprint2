@@ -12,9 +12,10 @@ Person(marketing_agent, "Маркетолог", "Сотрудник компан
 ' === Системные границы ===
 System_Boundary(kc, "Kubernetes Cluster") {
     Container(web, "Веб-приложение", "React", "PWA приложение для пользователей\nHelm Chart: web-app")
+    Container(tv, "TV-приложение", "", "TV-приложение для пользователей\nHelm Chart: tv-app")
     Container(admin_web, "Админ-панель", "React", "SPA интерфейс для сотрудников\nHelm Chart: admin-panel")
     
-    Container(api_gw, "API Gateway", "Kong/Envoy", "Единая точка входа\nHelm Chart: api-gateway")
+    Container(api_gw, "API Gateway", "Go", "Единая точка входа\nHelm Chart: api-gateway")
     
     Container(user_svc, "User Service", "Go", "Управление пользователями\nHelm Chart: user-service")
     ContainerDb(user_db, "User DB", "PostgreSQL", "Хранение данных пользователей")
@@ -34,7 +35,7 @@ System_Boundary(kc, "Kubernetes Cluster") {
     Container(support_svc, "Support Service", "Go", "Тикеты и обратная связь\nHelm Chart: support-service")
     ContainerDb(support_db, "Support DB", "PostgreSQL", "База тикетов")
     
-    Container(analytics_svc, "Analytics Service", "Python", "Сбор и анализ статистики\nHelm Chart: analytics-service")
+    Container(analytics_svc, "Analytics Service", "Go", "Сбор и анализ статистики\nHelm Chart: analytics-service")
     ContainerDb(analytics_db, "Analytics DB", "ClickHouse", "Аналитические данные")
     
     ContainerQueue(rabbitmq, "Message Broker", "RabbitMQ", "Асинхронные события\nHelm Chart: rabbitmq")
@@ -43,14 +44,19 @@ System_Boundary(kc, "Kubernetes Cluster") {
 
 System_Ext(payment, "Платежная система", "Внешний платежный шлюз")
 System_Ext(recommendation, "Система рекомендаций", "Внешняя рекомендательная система")
+System_Ext(s3, "Облачное хранилище", "S3")
+System_Ext(cinema1, "Кинотеатр 1", "Партнерский кинотеатр")
+System_Ext(cinema2, "Кинотеатр 2", "Партнерский кинотеатр")
 
 
 Rel(user, web, "Использует", "HTTPS")
+Rel(user, tv, "Использует")
 Rel(support_agent, admin_web, "Работает с тикетами", "HTTPS")
 Rel(admin, admin_web, "Администрирует", "HTTPS")
 Rel(marketing_agent, admin_web, "Анализирует данные", "HTTPS")
 
 Rel(web, api_gw, "API Calls", "HTTPS/REST")
+Rel(tv, api_gw, "API Calls", "HTTPS/REST")
 Rel(admin_web, api_gw, "API Calls", "HTTPS/REST")
 
 Rel(api_gw, user_svc, "gRPC")
@@ -83,9 +89,14 @@ Rel(user_svc, content_svc, "gRPC", "Запрос данных пользоват
 Rel(billing_svc, user_svc, "gRPC", "Проверка подписки")
 Rel(analytics_svc, content_svc, "HTTP", "Запрос метаданных")
 
+Rel(movie_svc, s3, "HTTPS", "Загрузка/получение медиа-контента")
+Rel(content_svc, cinema1, "API calls", "Синхронизация данных")
+Rel(content_svc, cinema2, "API calls", "Синхронизация данных")
+
 ' Helm чарты
 AddRelTag("helm")
 Rel(web, web, "Helm Chart", "web-app")
+Rel(tv, tv, "Helm Chart", "tv-app")
 Rel(admin_web, admin_web, "Helm Chart", "admin-panel")
 Rel(api_gw, api_gw, "Helm Chart", "api-gateway")
 Rel(user_svc, user_svc, "Helm Chart", "user-service")
