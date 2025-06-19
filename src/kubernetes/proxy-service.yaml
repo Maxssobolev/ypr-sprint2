@@ -6,7 +6,7 @@ metadata:
   labels:
     app: proxy-service
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: proxy-service
@@ -26,14 +26,14 @@ spec:
             - name: PORT
               value: "8000"
             - name: MONOLITH_URL
-              value: "http://monolith-service:8080"
+              value: "http://monolith:8080"
             - name: MOVIES_SERVICE_URL
               value: "http://movies-service:8081"
             - name: MOVIES_MIGRATION_PERCENT
               valueFrom:
                 configMapKeyRef:
                   name: cinemaabyss-config
-                  key: movies.migration.percent
+                  key: MOVIES_MIGRATION_PERCENT
           readinessProbe:
             httpGet:
               path: /health
