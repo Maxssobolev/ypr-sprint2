@@ -45,8 +45,8 @@ monolith:
       cpu: 100m
       memory: 128Mi
   service:
-    port: 8080
-    targetPort: 8080
+    port: 8010
+    targetPort: 8010
     type: ClusterIP
 
 # Proxy service configuration
@@ -70,7 +70,7 @@ proxyService:
     type: ClusterIP
   env:
     moviesServiceUrl: "http://movies-service:8081"
-    monolithUrl: "http://monolith:8080"
+    monolithUrl: "http://monolith:8010"
     PORT: "8000"
 
 # Movies service configuration

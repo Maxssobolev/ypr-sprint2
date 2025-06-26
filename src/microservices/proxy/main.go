@@ -10,7 +10,7 @@ import (
 	"os"
 	"strconv"
 	"time"
-	"fmt"
+	"strings"
 )
 
 var (
@@ -30,8 +30,8 @@ func main() {
 
 	// Обработчики маршрутов
 	http.HandleFunc("/health", healthHandler)
-	http.HandleFunc("/api/movies", moviesHandler(monolithProxy, moviesProxy))
-	http.Handle("/", monolithProxy) // Все остальные запросы направляем в монолит
+
+    http.Handle("/", proxyHandler(monolithProxy, moviesProxy))
 
 	port := getEnv("PORT", "8082")
 	log.Printf("Starting proxy server on port %s", port)
@@ -68,24 +68,43 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"status": true})
 }
 
-func moviesHandler(monolithProxy, moviesProxy *httputil.ReverseProxy) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Определение целевого сервиса на основе feature flag
-		target := monolithProxy
-		if shouldRouteToMoviesService() {
-			log.Printf("Routing to movies service: %s %s", r.Method, r.URL.Path)
-			target = moviesProxy
-		} else {
-			log.Printf("Routing to monolith: %s %s", r.Method, r.URL.Path)
-		}
+func proxyHandler(monolithProxy, moviesProxy *httputil.ReverseProxy) http.HandlerFunc {
+	 return func(w http.ResponseWriter, r *http.Request) {
+        var target *httputil.ReverseProxy
 
-		// Копирование оригинальных заголовков
-		r.Header.Set("X-Forwarded-Host", r.Host)
-		r.Header.Set("X-Proxy-Service", "cinema-proxy")
+        path := strings.TrimSuffix(r.URL.Path, "/") // для /api/movies/ → /api/movies
 
-		// Перенаправление запроса
-		target.ServeHTTP(w, r)
-	}
+        // Пути, которые всегда идут на монолит
+        if path == "/api/users" ||
+            path == "/api/payments" ||
+            path == "/api/subscriptions" {
+            target = monolithProxy
+        } else if path == "/api/movies" || path == "/api/movies/health" {
+            // Маршруты, связанные с фильмами (учитывают процент миграции)
+            if shouldRouteToMoviesService() {
+                log.Printf("Routing to movies service: %s %s", r.Method, r.URL.Path)
+                target = moviesProxy
+            } else {
+                log.Printf("Routing to monolith: %s %s", r.Method, r.URL.Path)
+                target = monolithProxy
+            }
+        } else if path == "/health" {
+            // Health check самого прокси
+            healthHandler(w, r)
+            return
+        } else {
+            // Все остальные запросы направляем в монолит
+            log.Printf("Routing to monolith by default: %s %s", r.Method, r.URL.Path)
+            target = monolithProxy
+        }
+
+        // Устанавливаем заголовки
+        r.Header.Set("X-Forwarded-Host", r.Host)
+        r.Header.Set("X-Proxy-Service", "cinema-proxy")
+
+        // Проксируем запрос
+        target.ServeHTTP(w, r)
+    }
 }
 
 func shouldRouteToMoviesService() bool {
