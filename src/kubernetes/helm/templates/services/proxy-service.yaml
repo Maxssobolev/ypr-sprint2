@@ -32,6 +32,8 @@ spec:
           value: "{{ .Values.proxyService.env.moviesServiceUrl }}"
         - name: MONOLITH_URL
           value: "{{ .Values.proxyService.env.monolithUrl }}"
+        - name: MOVIES_MIGRATION_PERCENT
+          value: "{{ .Values.config.moviesMigrationPercent }}"
         - name: PORT
           value: "{{ .Values.proxyService.env.PORT }}"
         ports:
