@@ -25,15 +25,11 @@ spec:
           env:
             - name: PORT
               value: "8000"
-            - name: MONOLITH_URL
-              value: "http://monolith:8080"
-            - name: MOVIES_SERVICE_URL
-              value: "http://movies-service:8081"
-            - name: MOVIES_MIGRATION_PERCENT
-              valueFrom:
-                configMapKeyRef:
-                  name: cinemaabyss-config
-                  key: MOVIES_MIGRATION_PERCENT
+          envFrom:
+            - configMapRef:
+                name: cinemaabyss-config
+            - secretRef:
+                name: cinemaabyss-secrets
           readinessProbe:
             httpGet:
               path: /health

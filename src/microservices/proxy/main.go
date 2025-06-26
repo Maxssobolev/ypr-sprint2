@@ -9,15 +9,18 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"time"
+	"fmt"
 )
 
 var (
-	moviesMigrationPercent int
+	migrationPercent int
 	monolithURL            *url.URL
 	moviesServiceURL       *url.URL
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	// Инициализация переменных окружения
 	initEnv()
 
@@ -37,13 +40,13 @@ func main() {
 
 func initEnv() {
 	// Получение процента миграции
-	migrationPercent, _ := strconv.Atoi(getEnv("MOVIES_MIGRATION_PERCENT", "0"))
+	migrationPercent, _ = strconv.Atoi(getEnv("MOVIES_MIGRATION_PERCENT", "0"))
 	if migrationPercent < 0 || migrationPercent > 100 {
 		log.Fatal("MOVIES_MIGRATION_PERCENT must be between 0 and 100")
 	}
 
 	// URL монолита
-	monolith, _ := url.Parse(getEnv("MONOLITH_URL", "http://localhost:8080"))
+	monolith, _ := url.Parse(getEnv("MONOLITH_URL", "http://localhost:8010"))
 	monolithURL = monolith
 
 	// URL сервиса фильмов
@@ -86,5 +89,5 @@ func moviesHandler(monolithProxy, moviesProxy *httputil.ReverseProxy) http.Handl
 }
 
 func shouldRouteToMoviesService() bool {
-	return rand.Intn(100) < moviesMigrationPercent
+	return rand.Intn(100) < migrationPercent
 }
